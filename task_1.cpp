@@ -1,6 +1,9 @@
 #include <cpr/cpr.h>
 #include <iostream>
 #include <algorithm>
+#include <nlohmann/json.hpp>
+
+using json = nlohmann::json;
 
 std::vector<double> sensorData(std::vector<std::string> &params);
 void Forward(int n);
@@ -8,35 +11,47 @@ void Backward(int n);
 void Left(int n);
 void Right(int n);
 int cellType(std::vector<double>& vals);
-std::vector<std::vector<int>> matrixlab(16,std::vector<int>(16,-1));
+
 std::vector<std::vector<bool>> visited(16,std::vector<bool>(16));
-void explore(int x, int y, std::vector<double>& vals);
+
+template <typename T, std::size_t Row, std::size_t Col>
+using Matrix = std::array<std::array<T, Col>, Row>;
+
+template <typename T, std::size_t Row, std::size_t Col>
+void sendMatrixMaze(const Matrix<T, Row, Col> &arr_matrix)
+{        
+    json json_array(arr_matrix);
+    std::string raw_string_matrix_maze = R"()";
+    auto string_matrix_maze = to_string(json_array);
+
+    cpr::Response r = cpr::Post(cpr::Url{"http://127.0.0.1:8801/api/v1/matrix/send?token=1234"},
+                    cpr::Body{string_matrix_maze},
+                    cpr::Header{{"Content-Type", "application/json"}});
+    std::cout << r.text << std::endl;
+}
+
 
 int main()
 {
-    std::vector<std::string> params = {
-        "front_distance",      // 0
-        "right_side_distance", // 1
-        "left_side_distance",  // 2
-        "back_distance",       // 3
-        "left_45_distance",    // 4
-        "right_45_distance",   // 5
-        "rotation_pitch",      // 6
-        "rotation_yaw",        // 7
-        "rotation_roll",       // 8
-        "down_x_offset",       // 9
-        "down_y_offset"        // 10
-    };
- 
-    auto sensor_data = sensorData(params);
-    std::cout << cellType(sensor_data) << std::endl;
-    Right(1);
-}
-void explore(int x, int y, std::vector<double>& vals) {
-    if (visited[x][y]) return;
-    matrixlab[x][y] = cellType(vals);
-    double front = vals[0], right = vals[1], left = vals[2], back = vals[3];
+    Matrix<int, 16, 16>  arr_matrix{{
+        {10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10},
+        {10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10},
+        {10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10},
+        {10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10},
+        {10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10},
+        {10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10},
+        {10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10},
+        {10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10},
+        {10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10},
+        {10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10},
+        {10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10},
+        {10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10},
+        {10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10},
+        {10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10},
+        {10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10},
+        {10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10},}};
 
+    sendMatrixMaze(arr_matrix);
 }
 
 std::vector<double> sensorData(std::vector<std::string> &params)
