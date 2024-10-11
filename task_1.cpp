@@ -39,6 +39,7 @@ void getSensorsData(SensorsData &sensors_data);
 // int cellType(SensorsData sensors_data);
 SensorsData rotationSensors(SensorsData sensors_data);
 void printSensorsData(const SensorsData &sensors_data);
+int cellType(const SensorsData &rotation_sensor_data);
 
 // int cellType(std::vector<double> &vals);
 
@@ -76,10 +77,11 @@ int main()
     SensorsData current_sensors_data;
     SensorsData rotation_sensors_data;
     getSensorsData(current_sensors_data);
-    printSensorsData(current_sensors_data);
-    std::cout << std::endl;
+    // printSensorsData(current_sensors_data);
+    
     rotation_sensors_data = rotationSensors(current_sensors_data);
-    printSensorsData(rotation_sensors_data);
+    std::cout << cellType(rotation_sensors_data) << std::endl;
+    // printSensorsData(rotation_sensors_data);
 
     // cellType(current_sensors_data);
 }
@@ -189,91 +191,74 @@ void printSensorsData(const SensorsData &sensors_data)
     std::cout << "rotation_yaw: " << sensors_data.rotation_yaw << std::endl;
 }
 
-// int cellType(std::vector<double> &vals)
-// {
-//     double front = vals[0], right = vals[1], left = vals[2], back = vals[3];
-//     double yaw = vals[7];
-//     double mem;
-//     if (yaw > 85 && yaw < 95)
-//     {
-//         mem = front;
-//         front = left;
-//         left = back;
-//         back = right;
-//         right = mem;
-//     }
-//     else if (yaw > -95 && yaw < -85)
-//     {
-//         mem = front;
-//         front = right;
-//         right = back;
-//         back = left;
-//         left = mem;
-//     }
-//     else if (yaw > 175 && yaw < 185)
-//     {
-//         std::swap(right, left);
-//         std::swap(back, front);
-//     }
+int cellType(const SensorsData &rotation_sensor_data)
+{
+    int distance_wall = 70;
 
-//     int tres = 70;
-//     if (front < tres || right < tres || left < tres || back < tres)
-//     {
-//         if (front < tres)
-//         {
-//             if (right < tres)
-//             {
-//                 if (left < tres)
-//                 {
-//                     if (back < tres)
-//                         return 15;
-//                     else
-//                         return 12;
-//                 }
-//                 else if (back < tres)
-//                     return 11;
-//                 else
-//                     return 7;
-//             }
-//             else if (left < tres)
-//             {
-//                 if (back < tres)
-//                     return 13;
-//                 else
-//                     return 8;
-//             }
-//             else if (back < tres)
-//                 return 10;
-//             else
-//                 return 2;
-//         }
-//         else if (left < tres)
-//         {
-
-//             if (right < tres)
-//             {
-//                 if (back < tres)
-//                     return 14;
-//                 else
-//                     return 9;
-//             }
-//             else if (back < tres)
-//                 return 5;
-//             else
-//                 return 1;
-//         }
-//         else if (right < tres)
-//         {
-//             if (back < tres)
-//                 return 6;
-//             else
-//                 return 3;
-//         }
-//         else if (back < tres)
-//             return 4;
-//     }
-//     else
-//         return 0;
-
-//     return -1;
-// }
+    if (rotation_sensor_data.front_distance > distance_wall && rotation_sensor_data.right_side_distance > distance_wall && rotation_sensor_data.left_side_distance > distance_wall && rotation_sensor_data.back_distance > distance_wall)
+    {
+        return 0;
+    }
+    else if (rotation_sensor_data.front_distance > distance_wall && rotation_sensor_data.right_side_distance > distance_wall && rotation_sensor_data.left_side_distance < distance_wall && rotation_sensor_data.back_distance > distance_wall)
+    {
+        return 1;
+    }
+    else if (rotation_sensor_data.front_distance < distance_wall && rotation_sensor_data.right_side_distance > distance_wall && rotation_sensor_data.left_side_distance > distance_wall && rotation_sensor_data.back_distance > distance_wall)
+    {
+        return 2;
+    }
+    else if (rotation_sensor_data.front_distance > distance_wall && rotation_sensor_data.right_side_distance < distance_wall && rotation_sensor_data.left_side_distance > distance_wall && rotation_sensor_data.back_distance > distance_wall)
+    {
+        return 3;
+    }
+    else if (rotation_sensor_data.front_distance > distance_wall && rotation_sensor_data.right_side_distance > distance_wall && rotation_sensor_data.left_side_distance > distance_wall && rotation_sensor_data.back_distance < distance_wall)
+    {
+        return 4;
+    }
+    else if (rotation_sensor_data.front_distance > distance_wall && rotation_sensor_data.right_side_distance > distance_wall && rotation_sensor_data.left_side_distance < distance_wall && rotation_sensor_data.back_distance < distance_wall)
+    {
+        return 5;
+    }
+    else if (rotation_sensor_data.front_distance > distance_wall && rotation_sensor_data.right_side_distance < distance_wall && rotation_sensor_data.left_side_distance > distance_wall && rotation_sensor_data.back_distance < distance_wall)
+    {
+        return 6;
+    }
+    else if (rotation_sensor_data.front_distance < distance_wall && rotation_sensor_data.right_side_distance < distance_wall && rotation_sensor_data.left_side_distance > distance_wall && rotation_sensor_data.back_distance > distance_wall)
+    {
+        return 7;
+    }
+    else if (rotation_sensor_data.front_distance < distance_wall && rotation_sensor_data.right_side_distance > distance_wall && rotation_sensor_data.left_side_distance < distance_wall && rotation_sensor_data.back_distance > distance_wall)
+    {
+        return 8;
+    }
+    else if (rotation_sensor_data.front_distance > distance_wall && rotation_sensor_data.right_side_distance < distance_wall && rotation_sensor_data.left_side_distance < distance_wall && rotation_sensor_data.back_distance > distance_wall)
+    {
+        return 9;
+    }
+    else if (rotation_sensor_data.front_distance < distance_wall && rotation_sensor_data.right_side_distance > distance_wall && rotation_sensor_data.left_side_distance > distance_wall && rotation_sensor_data.back_distance < distance_wall)
+    {
+        return 10;
+    }
+    else if (rotation_sensor_data.front_distance < distance_wall && rotation_sensor_data.right_side_distance < distance_wall && rotation_sensor_data.left_side_distance > distance_wall && rotation_sensor_data.back_distance < distance_wall)
+    {
+        return 11;
+    }
+    else if (rotation_sensor_data.front_distance < distance_wall && rotation_sensor_data.right_side_distance < distance_wall && rotation_sensor_data.left_side_distance < distance_wall && rotation_sensor_data.back_distance > distance_wall)
+    {
+        return 12;
+    }
+    else if (rotation_sensor_data.front_distance < distance_wall && rotation_sensor_data.right_side_distance > distance_wall && rotation_sensor_data.left_side_distance < distance_wall && rotation_sensor_data.back_distance < distance_wall)
+    {
+        return 13;
+    }
+    else if (rotation_sensor_data.front_distance > distance_wall && rotation_sensor_data.right_side_distance < distance_wall && rotation_sensor_data.left_side_distance < distance_wall && rotation_sensor_data.back_distance < distance_wall)
+    {
+        return 14;
+    }
+    else if (rotation_sensor_data.front_distance < distance_wall && rotation_sensor_data.right_side_distance < distance_wall && rotation_sensor_data.left_side_distance < distance_wall && rotation_sensor_data.back_distance < distance_wall)
+    {
+        return 15;
+    }
+    
+    return -1;
+}
