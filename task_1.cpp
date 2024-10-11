@@ -25,7 +25,7 @@ struct SensorsData
     float rotation_yaw {};
 };
 
-void sensorData(SensorsData& sensors_data);
+void getSensorsData(SensorsData& sensors_data);
 
 void Forward(int n);
 void Backward(int n);
@@ -73,10 +73,10 @@ int main()
     // sendMatrixMaze(arr_matrix);
 
     SensorsData current_sensors_data;
-    sensorData(current_sensors_data);
+    getSensorsData(current_sensors_data);
 }
 
-void getSensorData(SensorsData& sensors_data)
+void getSensorsData(SensorsData& sensors_data)
 {
     auto r = cpr::Get(cpr::Url{api_interface::sensor_data});
     json json_array = json::parse(r.text);
