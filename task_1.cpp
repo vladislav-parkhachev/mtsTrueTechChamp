@@ -5,7 +5,28 @@
 
 using json = nlohmann::json;
 
-std::vector<double> sensorData(std::vector<std::string> &params);
+namespace api_interface
+{
+    const std::string token = "4326f9a3-1628-4884-90cb-c1b93890d61a8ffcd3c7-3620-4a0d-90b3-3dbe0b1c6267";
+    const std::string matrix_send = "http://127.0.0.1:8801/api/v1/matrix/send?token=" + token;
+    const std::string forward = "http://127.0.0.1:8801/api/v1/robot-cells/forward?token=" + token;
+    const std::string backward = "http://127.0.0.1:8801/api/v1/robot-cells/backward?token=" + token;
+    const std::string right = "http://127.0.0.1:8801/api/v1/robot-cells/right?token=" + token;
+    const std::string left = "http://127.0.0.1:8801/api/v1/robot-cells/left?token=" + token;
+    const std::string sensor_data = "http://127.0.0.1:8801/api/v1/robot-cells/sensor-data?token=" + token;
+}
+
+struct SensorsData
+{
+    float front_distance {};
+    float right_side_distance {};
+    float left_side_distance {};
+    float back_distance {};
+    float rotation_yaw {};
+};
+
+void sensorData(SensorsData& sensors_data);
+
 void Forward(int n);
 void Backward(int n);
 void Left(int n);
@@ -21,15 +42,13 @@ template <typename T, std::size_t Row, std::size_t Col>
 void sendMatrixMaze(const Matrix<T, Row, Col> &arr_matrix)
 {        
     json json_array(arr_matrix);
-    std::string raw_string_matrix_maze = R"()";
     auto string_matrix_maze = to_string(json_array);
 
-    cpr::Response r = cpr::Post(cpr::Url{"http://127.0.0.1:8801/api/v1/matrix/send?token=1234"},
+    cpr::Response r = cpr::Post(cpr::Url{api_interface::matrix_send},
                     cpr::Body{string_matrix_maze},
                     cpr::Header{{"Content-Type", "application/json"}});
     std::cout << r.text << std::endl;
 }
-
 
 int main()
 {
@@ -51,35 +70,26 @@ int main()
         {10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10},
         {10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10},}};
 
-    sendMatrixMaze(arr_matrix);
+    // sendMatrixMaze(arr_matrix);
+
+    SensorsData current_sensors_data;
+    sensorData(current_sensors_data);
 }
 
-std::vector<double> sensorData(std::vector<std::string> &params)
+void getSensorData(SensorsData& sensors_data)
 {
-    auto r = cpr::Get(cpr::Url{"http://127.0.0.1:8801/api/v1/robot-cells/sensor-data?token=1234"});
-    std::string sensData = r.text;
-    std::vector<double> vals(params.size());
-    for (int i = 0; i < params.size() - 1; ++i)
-    {
-        int beg = sensData.find(params[i]) + params[i].size() + 2;
-        int end = sensData.find(params[i + 1]) - 2;
-        std::string res = sensData.substr(beg, end - beg);
-        vals[i] = std::stod(res);
-    }
-    int lastbeg = sensData.find(params[params.size() - 1]) + params[params.size() - 1].size() + 2;
-    int lastend = sensData.find("}") - 1;
-    std::string lastres = sensData.substr(lastbeg, lastend - lastbeg);
-    vals[vals.size() - 1] = std::stod(lastres);
-    for (int i = 0; i < params.size(); ++i)
-    {
-        std::cout << params[i] << ": " << vals[i] << std::endl;
-    }
-    return vals;
+    auto r = cpr::Get(cpr::Url{api_interface::sensor_data});
+    json json_array = json::parse(r.text);
+    sensors_data.front_distance = json_array["front_distance"];
+    sensors_data.right_side_distance = json_array["right_side_distance"];
+    sensors_data.left_side_distance = json_array["left_side_distance"];
+    sensors_data.back_distance = json_array["back_distance"];
+    sensors_data.rotation_yaw = json_array["rotation_yaw"];
 }
 
 void Forward(int n){
     while(n--){
-        cpr::Response r = cpr::Post(cpr::Url{"http://127.0.0.1:8801/api/v1/robot-cells/forward?token=1234"},
+        cpr::Response r = cpr::Post(cpr::Url{api_interface::forward},
                     cpr::Body{""},
                     cpr::Header{{"accept", "application/json"}});
 
@@ -88,7 +98,7 @@ void Forward(int n){
 }
 void Backward(int n){
     while(n--){
-        cpr::Response r = cpr::Post(cpr::Url{"http://127.0.0.1:8801/api/v1/robot-cells/backward?token=1234"},
+        cpr::Response r = cpr::Post(cpr::Url{api_interface::backward},
                     cpr::Body{""},
                     cpr::Header{{"accept", "application/json"}});
 
@@ -97,7 +107,7 @@ void Backward(int n){
 }
 void Right(int n){
     while(n--){
-        cpr::Response r = cpr::Post(cpr::Url{"http://127.0.0.1:8801/api/v1/robot-cells/right?token=1234"},
+        cpr::Response r = cpr::Post(cpr::Url{api_interface::right},
                     cpr::Body{""},
                     cpr::Header{{"accept", "application/json"}});
 
@@ -106,7 +116,7 @@ void Right(int n){
 }
 void Left(int n){
     while(n--){
-        cpr::Response r = cpr::Post(cpr::Url{"http://127.0.0.1:8801/api/v1/robot-cells/left?token=1234"},
+        cpr::Response r = cpr::Post(cpr::Url{api_interface::left},
                     cpr::Body{""},
                     cpr::Header{{"accept", "application/json"}});
 
