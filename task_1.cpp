@@ -715,4 +715,44 @@ void maze_solver::Algorithm::FindNeighbours(std::array<int, 2> cur_node)
     }
 }
 
+bool maze_solver::Algorithm::DFSAlgorithm(std::array<int, 2> start) {
+    std::array<int,2> curr_node{};
+    this->temp_goal_=false;
+    //---> Reset Stack and exploration History <---//
+    this->ClearStack();
+    this->explored_node_={};
+    /* ---> Step 01: Add start to node <--- */
+    this->stack_.push(start);
+    /* ---> Step 02: Initialize and assign parent node to start node <--- */
+    this->node_info = std::array<std::array<Node, 16>, 16>();
+    this->node_info[start[0]][start[1]].parent_node_ = start;
+    /* ---> Step 03: loop until stack_ exhausts <--- */
+    while(!this->stack_.empty()) {
+        /* ---> Step 04: Set Current Node <--- */
+        curr_node = stack_.top();                                                                   //--> Set the top last-in node as current node
+        this->stack_.pop();                                                                         //--> Pop/remove the last element from the stack
+        /* ---> Step 05: check IsGoal <--- */
+        if (curr_node == this->goal1_ || curr_node == this->goal2_ ||
+            curr_node == this->goal3_ || curr_node == this->goal4_) {
+            this->end_goal_ = curr_node;
+            return true;
+        }
+        /* ---> Step 06: Check Visited <--- */
+        else if (!IsExplored(curr_node)) FindNeighbours(curr_node);
+        /* ---> Step 07: Mark visited <--- */
+        this->explored_node_[curr_node[0]][curr_node[1]] = true;
+    }
+    return false;
+}
+
+std::stack<std::array<int, 2>> maze_solver::Algorithm::BackTrack(std::array<int, 2> current_node, std::array<std::array<Node, 16>, 16>& node) {
+    std::array<int, 2> parent_node  = node[current_node[0]][current_node[1]].parent_node_;
+    this->path_stack_.push(current_node);
+    while (current_node != parent_node) {
+        current_node = parent_node;
+        parent_node = node[current_node[0]][current_node[1]].parent_node_;
+        this->path_stack_.push(current_node);
+    }
+    return this->path_stack_;
+}
 
