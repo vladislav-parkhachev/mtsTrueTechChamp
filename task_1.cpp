@@ -76,6 +76,10 @@ namespace maze_solver
         const std::string api_left = "http://127.0.0.1:8801/api/v1/robot-cells/left?token=" + token;
         const std::string api_sensor_data = "http://127.0.0.1:8801/api/v1/robot-cells/sensor-data?token=" + token;
 
+        int x;
+        int y;
+        char direction;
+
     public:
         struct SensorsData
         {
@@ -93,6 +97,14 @@ namespace maze_solver
 
         void UpdateSensorsData();
         char GetDirection();
+
+        void MoveForward(int x, int y, char direction);
+        void TurnLeft();
+        void TurnRight();
+
+        void set_x(int x);
+        void set_y(int y);
+        void set_direction(char direction);
     };
 
     struct Node
@@ -144,15 +156,10 @@ namespace maze_solver
 
 int main()
 {
-    maze_solver::Algorithm test_algorithm;
-    std::array<int, 2> cur_node{15, 2};
-    test_algorithm.FindNeighbours(cur_node);
-    while (!test_algorithm.stack_.empty())
-    {
-        std::cout << test_algorithm.stack_.top().at(0) << std::endl;
-        std::cout << test_algorithm.stack_.top().at(1) << std::endl;
-        test_algorithm.stack_.pop();
-    }
+    maze_solver::RobotAPI robot(api_interface::token);
+    // robot.MoveForward();
+    robot.TurnRight();
+
 
     // Matrix<int, 16, 16> arr_matrix{};
     // Matrix<bool, 16, 16> visited_matrix{};
@@ -626,6 +633,46 @@ void maze_solver::RobotAPI::UpdateSensorsData()
     this->sensors_data.rotation_yaw = json_array["rotation_yaw"];
 }
 
+void maze_solver::RobotAPI::MoveForward(int x, int y, char direction)
+{
+    cpr::Response r = cpr::Post(cpr::Url{this->api_forward},
+                                cpr::Body{""},
+                                cpr::Header{{"accept", "application/json"}});
+    this->set_x(x);
+    this->set_y(y);
+    this->set_direction(direction);
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+}
+
+void maze_solver::RobotAPI::TurnLeft()
+{
+    cpr::Response r = cpr::Post(cpr::Url{this->api_left},
+                                cpr::Body{""},
+                                cpr::Header{{"accept", "application/json"}});
+}
+
+void maze_solver::RobotAPI::TurnRight()
+{
+    cpr::Response r = cpr::Post(cpr::Url{this->api_righ},
+                                cpr::Body{""},
+                                cpr::Header{{"accept", "application/json"}});
+}
+
+void maze_solver::RobotAPI::set_x(int x)
+{
+    this->x = x;
+}
+void maze_solver::RobotAPI::set_y(int y)
+{
+    this->y = y;
+}
+
+void maze_solver::RobotAPI::set_direction(char direction)
+{
+    this->direction = direction;
+}
+
 void maze_solver::Algorithm::ClearStack()
 {
     while (!this->stack_.empty())
@@ -715,40 +762,46 @@ void maze_solver::Algorithm::FindNeighbours(std::array<int, 2> cur_node)
     }
 }
 
-bool maze_solver::Algorithm::DFSAlgorithm(std::array<int, 2> start) {
-    std::array<int,2> curr_node{};
-    this->temp_goal_=false;
+bool maze_solver::Algorithm::DFSAlgorithm(std::array<int, 2> start)
+{
+    std::array<int, 2> curr_node{};
+    this->temp_goal_ = false;
     //---> Reset Stack and exploration History <---//
     this->ClearStack();
-    this->explored_node_={};
+    this->explored_node_ = {};
     /* ---> Step 01: Add start to node <--- */
     this->stack_.push(start);
     /* ---> Step 02: Initialize and assign parent node to start node <--- */
     this->node_info = std::array<std::array<Node, 16>, 16>();
     this->node_info[start[0]][start[1]].parent_node_ = start;
     /* ---> Step 03: loop until stack_ exhausts <--- */
-    while(!this->stack_.empty()) {
+    while (!this->stack_.empty())
+    {
         /* ---> Step 04: Set Current Node <--- */
-        curr_node = stack_.top();                                                                   //--> Set the top last-in node as current node
-        this->stack_.pop();                                                                         //--> Pop/remove the last element from the stack
+        curr_node = stack_.top(); //--> Set the top last-in node as current node
+        this->stack_.pop();       //--> Pop/remove the last element from the stack
         /* ---> Step 05: check IsGoal <--- */
         if (curr_node == this->goal1_ || curr_node == this->goal2_ ||
-            curr_node == this->goal3_ || curr_node == this->goal4_) {
+            curr_node == this->goal3_ || curr_node == this->goal4_)
+        {
             this->end_goal_ = curr_node;
             return true;
         }
         /* ---> Step 06: Check Visited <--- */
-        else if (!IsExplored(curr_node)) FindNeighbours(curr_node);
+        else if (!IsExplored(curr_node))
+            FindNeighbours(curr_node);
         /* ---> Step 07: Mark visited <--- */
         this->explored_node_[curr_node[0]][curr_node[1]] = true;
     }
     return false;
 }
 
-std::stack<std::array<int, 2>> maze_solver::Algorithm::BackTrack(std::array<int, 2> current_node, std::array<std::array<Node, 16>, 16>& node) {
-    std::array<int, 2> parent_node  = node[current_node[0]][current_node[1]].parent_node_;
+std::stack<std::array<int, 2>> maze_solver::Algorithm::BackTrack(std::array<int, 2> current_node, std::array<std::array<Node, 16>, 16> &node)
+{
+    std::array<int, 2> parent_node = node[current_node[0]][current_node[1]].parent_node_;
     this->path_stack_.push(current_node);
-    while (current_node != parent_node) {
+    while (current_node != parent_node)
+    {
         current_node = parent_node;
         parent_node = node[current_node[0]][current_node[1]].parent_node_;
         this->path_stack_.push(current_node);
@@ -756,3 +809,176 @@ std::stack<std::array<int, 2>> maze_solver::Algorithm::BackTrack(std::array<int,
     return this->path_stack_;
 }
 
+void maze_solver::Algorithm::Navigate(std::stack<std::array<int, 2>> &local_path)
+{
+    int x{}, y{};
+    char curr_direction{};
+    char direction_togo{};
+    std::array<int, 2> node_curr{}, node_next{};
+
+    //---> Step 01: Extract the current Node and Next Node <---//
+    node_curr = local_path.top();
+    local_path.pop();
+    node_next = local_path.top();
+
+    //---> Step 02: Compute the togo direction <---//
+    x = node_next[0] - node_curr[0];
+    y = node_next[1] - node_curr[1];
+    curr_direction = this->robot.GetDirection();
+
+    if (x == -1 && y == 0)
+        direction_togo = 'N';
+    else if (x == 1 && y == 0)
+        direction_togo = 'S';
+    else if (x == 0 && y == -1)
+        direction_togo = 'W';
+    else if (x == 0 && y == 1)
+        direction_togo = 'E';
+
+    this->robot.UpdateSensorsData();
+    // ---> Step 03: Navigate the Robot and update new location and direction info <---//
+    if (curr_direction == 'N')
+    {
+        if (direction_togo == 'N')
+        {
+            if (this->robot.sensors_data.front_distance > 70)
+                this->robot.MoveForward(node_next[0], node_next[1], direction_togo);
+            else
+                this->path_blocked = true;
+        }
+        else if (direction_togo == 'S')
+        {
+            this->robot.TurnLeft();
+            this->robot.TurnLeft();
+            this->robot.MoveForward(node_next[0], node_next[1], direction_togo);
+        }
+        else if (direction_togo == 'E')
+        {
+            if (this->robot.sensors_data.right_side_distance > 70)
+            {
+                this->robot.TurnRight();
+                this->robot.MoveForward(node_next[0], node_next[1], direction_togo);
+            }
+            else
+                this->path_blocked = true;
+        }
+        else if (direction_togo == 'W')
+        {
+            if (this->robot.sensors_data.left_side_distance > 70)
+            {
+                this->robot.TurnLeft();
+                this->robot.MoveForward(node_next[0], node_next[1], direction_togo);
+            }
+            else
+                this->path_blocked = true;
+        }
+    }
+    else if (curr_direction == 'S')
+    {
+        if (direction_togo == 'N')
+        {
+            this->robot.TurnLeft();
+            this->robot.TurnLeft();
+            this->robot.MoveForward(node_next[0], node_next[1], direction_togo);
+        }
+        else if (direction_togo == 'S')
+        {
+            if (this->robot.sensors_data.front_distance > 70)
+                this->robot.MoveForward(node_next[0], node_next[1], direction_togo);
+            else
+                this->path_blocked = true;
+        }
+        else if (direction_togo == 'E')
+        {
+            if (this->robot.sensors_data.left_side_distance > 70)
+            {
+                this->robot.TurnLeft();
+                this->robot.MoveForward(node_next[0], node_next[1], direction_togo);
+            }
+            else
+                this->path_blocked = true;
+        }
+        else if (direction_togo == 'W')
+        {
+            if (this->robot.sensors_data.right_side_distance > 70)
+            {
+                this->robot.TurnRight();
+                this->robot.MoveForward(node_next[0], node_next[1], direction_togo);
+            }
+            else
+                this->path_blocked = true;
+        }
+    }
+    else if (curr_direction == 'E')
+    {
+        if (direction_togo == 'N')
+        {
+            if (this->robot.sensors_data.left_side_distance > 70)
+            {
+                this->robot.TurnLeft();
+                this->robot.MoveForward(node_next[0], node_next[1], direction_togo);
+            }
+            else
+                this->path_blocked = true;
+        }
+        else if (direction_togo == 'S')
+        {
+            if (this->robot.sensors_data.right_side_distance > 70)
+            {
+                this->robot.TurnRight();
+                this->robot.MoveForward(node_next[0], node_next[1], direction_togo);
+            }
+            else
+                this->path_blocked = true;
+        }
+        else if (direction_togo == 'E')
+        {
+            if (this->robot.sensors_data.front_distance > 70)
+                this->robot.MoveForward(node_next[0], node_next[1], direction_togo);
+            else
+                this->path_blocked = true;
+        }
+        else if (direction_togo == 'W')
+        {
+            this->robot.TurnLeft();
+            this->robot.TurnLeft();
+            this->robot.MoveForward(node_next[0], node_next[1], direction_togo);
+        }
+    }
+    else if (curr_direction == 'W')
+    {
+        if (direction_togo == 'N')
+        {
+            if (this->robot.sensors_data.right_side_distance > 70)
+            {
+                this->robot.TurnRight();
+                this->robot.MoveForward(node_next[0], node_next[1], direction_togo);
+            }
+            else
+                this->path_blocked = true;
+        }
+        else if (direction_togo == 'S')
+        {
+            if (this->robot.sensors_data.left_side_distance > 70)
+            {
+                this->robot.TurnLeft();
+                this->robot.MoveForward(node_next[0], node_next[1], direction_togo);
+            }
+            else
+                this->path_blocked = true;
+        }
+        else if (direction_togo == 'E')
+        {
+            this->robot.TurnLeft();
+            this->robot.TurnLeft();
+            this->robot.MoveForward(node_next[0], node_next[1], direction_togo);
+        }
+        else if (direction_togo == 'W')
+        {
+            if (this->robot.sensors_data.front_distance > 70)
+                this->robot.MoveForward(node_next[0], node_next[1], direction_togo);
+            else
+                this->path_blocked = true;
+        }
+    }
+}
