@@ -20,6 +20,7 @@ namespace api_interface
     const std::string right = "http://127.0.0.1:8801/api/v1/robot-cells/right?token=" + token;
     const std::string left = "http://127.0.0.1:8801/api/v1/robot-cells/left?token=" + token;
     const std::string sensor_data = "http://127.0.0.1:8801/api/v1/robot-cells/sensor-data?token=" + token;
+    const std::string maze_restart = "http://127.0.0.1:8801/api/v1/maze/restart?token=" + token;
 }
 
 // SensorsData rotationSensors(SensorsData sensors_data);
@@ -86,15 +87,16 @@ namespace maze_solver
         bool temp_goal_{false}, path_blocked{true};
         char current_direction_;
         std::array<int, 2> current_node_;
-        std::array<int, 2> parent_node_;
+        std::array<int, 2> next_node;
         std::stack<std::array<int, 2>> stack_;
+        std::stack<std::array<int, 2>> move_history;
         std::array<std::array<int, 16>, 16> arr_matrix;
         maze_solver::RobotAPI robot;
         std::array<std::array<bool, 16>, 16> visited_node_;
         std::array<int, 2> goal1_, goal2_, goal3_, goal4_, end_goal_;
 
         Algorithm() : path_found_{false}, current_direction_{'N'},
-                      current_node_{}, parent_node_{}, stack_{},
+                      current_node_{}, next_node{}, stack_{},
                       visited_node_{}, robot{api_interface::token}, arr_matrix{},
                       goal1_{7, 7}, goal2_{7, 8}, goal3_{7, 8}, goal4_{8, 8}
         {
@@ -110,7 +112,7 @@ namespace maze_solver
         void Navigate(std::array<int, 2> cur_node, std::array<int, 2> next_node);
         int cellType();
         void sendMatrixMaze();
-        void GreedyAlgorithm(std::array<int, 2> start);
+        void MoveHistory();
     };
 }
 
@@ -118,9 +120,31 @@ int main()
 {
     maze_solver::Algorithm algo_test_navigate;
     std::array<int, 2> start{15, 0};
-    std::array<int, 2> finish = algo_test_navigate.DFSAlgorithmFinish(start);
-    std::cout << finish.at(0) <<  finish.at(1) << std::endl;
-    // algo_test_navigate.sendMatrixMaze();
+    algo_test_navigate.DFSAlgorithmFinish(start);
+
+    cpr::Response r = cpr::Post(cpr::Url{api_interface::maze_restart},
+                                cpr::Body{""},
+                                cpr::Header{{"accept", "application/json"}});
+
+    while (!algo_test_navigate.stack_.empty())
+    {
+        algo_test_navigate.move_history.push(algo_test_navigate.stack_.top());
+        algo_test_navigate.stack_.pop();
+    }
+
+    
+    std::array<int, 2> current_node;
+
+    while (!algo_test_navigate.move_history.empty())
+    {
+        current_node = algo_test_navigate.move_history.top();
+        algo_test_navigate.move_history.pop();
+        algo_test_navigate.Navigate(current_node, algo_test_navigate.move_history.top());
+    }
+
+    // // // std::array<int, 2> finish = algo_test_navigate.DFSAlgorithmFinish(start);
+
+    // algo_test_navigate.DFSAlgorithm(start);
 }
 
 void maze_solver::Algorithm::sendMatrixMaze()
@@ -359,72 +383,50 @@ bool maze_solver::Algorithm::FindNeighbours(std::array<int, 2> cur_node)
 
     if (robotDirection == 'N')
     {
-        if (!this->temp_goal_ && node_W[1] >= 0 && robot.sensors_data.left_side_distance > 70)
+        if (node_W[1] >= 0 && robot.sensors_data.left_side_distance > 70)
             return AddNeighbour(cur_node, node_W);
-        if (!this->temp_goal_ && node_N[0] >= 0 && robot.sensors_data.front_distance > 70)
+        if (node_N[0] >= 0 && robot.sensors_data.front_distance > 70)
             return AddNeighbour(cur_node, node_N);
-        if (!this->temp_goal_ && node_E[1] <= 15 && robot.sensors_data.right_side_distance > 70)
+        if (node_E[1] <= 15 && robot.sensors_data.right_side_distance > 70)
             return AddNeighbour(cur_node, node_E);
-        if (!this->temp_goal_ && node_S[0] <= 15 && robot.sensors_data.back_distance > 70)
+        if (node_S[0] <= 15 && robot.sensors_data.back_distance > 70)
             return AddNeighbour(cur_node, node_S);
     }
     else if (robotDirection == 'S')
     {
-        if (!this->temp_goal_ && node_E[1] <= 15 && robot.sensors_data.left_side_distance > 70)
+        if (node_E[1] <= 15 && robot.sensors_data.left_side_distance > 70)
             return AddNeighbour(cur_node, node_E);
-        if (!this->temp_goal_ && node_S[0] <= 15 && robot.sensors_data.front_distance > 70)
+        if (node_S[0] <= 15 && robot.sensors_data.front_distance > 70)
             return AddNeighbour(cur_node, node_S);
-        if (!this->temp_goal_ && node_W[1] >= 0 && robot.sensors_data.right_side_distance > 70)
+        if (node_W[1] >= 0 && robot.sensors_data.right_side_distance > 70)
             return AddNeighbour(cur_node, node_W);
-        if (!this->temp_goal_ && node_N[0] >= 0 && robot.sensors_data.back_distance > 70)
+        if (node_N[0] >= 0 && robot.sensors_data.back_distance > 70)
             return AddNeighbour(cur_node, node_N);
     }
     else if (robotDirection == 'E')
     {
-        if (!this->temp_goal_ && node_N[0] >= 0 && robot.sensors_data.left_side_distance > 70)
+        if (node_N[0] >= 0 && robot.sensors_data.left_side_distance > 70)
             return AddNeighbour(cur_node, node_N);
-        if (!this->temp_goal_ && node_E[1] <= 15 && robot.sensors_data.front_distance > 70)
+        if (node_E[1] <= 15 && robot.sensors_data.front_distance > 70)
             return AddNeighbour(cur_node, node_E);
-        if (!this->temp_goal_ && node_S[0] <= 15 && robot.sensors_data.right_side_distance > 70)
+        if (node_S[0] <= 15 && robot.sensors_data.right_side_distance > 70)
             return AddNeighbour(cur_node, node_S);
-        if (!this->temp_goal_ && node_W[1] >= 0 && robot.sensors_data.back_distance > 70)
+        if (node_W[1] >= 0 && robot.sensors_data.back_distance > 70)
             return AddNeighbour(cur_node, node_W);
     }
-    else if (!this->temp_goal_ && robotDirection == 'W')
+    else if (robotDirection == 'W')
     {
-        if (!this->temp_goal_ && node_S[0] <= 15 && robot.sensors_data.left_side_distance > 70)
+        if (node_S[0] <= 15 && robot.sensors_data.left_side_distance > 70)
             return AddNeighbour(cur_node, node_S);
-        if (!this->temp_goal_ && node_W[1] >= 0 && robot.sensors_data.front_distance > 70)
+        if (node_W[1] >= 0 && robot.sensors_data.front_distance > 70)
             return AddNeighbour(cur_node, node_W);
-        if (!this->temp_goal_ && node_N[0] >= 0 && robot.sensors_data.right_side_distance > 70)
+        if (node_N[0] >= 0 && robot.sensors_data.right_side_distance > 70)
             return AddNeighbour(cur_node, node_N);
-        if (!this->temp_goal_ && node_E[1] <= 15 && robot.sensors_data.back_distance > 70)
+        if (node_E[1] <= 15 && robot.sensors_data.back_distance > 70)
             return AddNeighbour(cur_node, node_E);
     }
 
     return false;
-}
-
-void maze_solver::Algorithm::GreedyAlgorithm(std::array<int, 2> start)
-{
-    std::array<int, 2> curr_node{};
-    curr_node = start;
-    this->stack_.push(start);
-
-    while (curr_node == this->goal1_ || curr_node == this->goal2_ ||
-           curr_node == this->goal3_ || curr_node == this->goal4_)
-    {
-        if (FindNeighbours(curr_node))
-        {
-            this->visited_node_[curr_node[0]][curr_node[1]] = true;
-            this->Navigate(curr_node, this->stack_.top());
-        }
-        else
-        {
-            this->stack_.pop();
-            this->Navigate(curr_node, this->stack_.top());
-        }
-    }
 }
 
 std::array<int, 2> maze_solver::Algorithm::DFSAlgorithmFinish(std::array<int, 2> start)
@@ -449,6 +451,10 @@ std::array<int, 2> maze_solver::Algorithm::DFSAlgorithmFinish(std::array<int, 2>
 
         if (FindNeighbours(curr_node))
         {
+            if (this->stack_.top() == goal1_ || stack_.top() == goal2_ || stack_.top() == goal3_ || stack_.top() == goal4_)
+            {
+                break;
+            }
             this->visited_node_[curr_node[0]][curr_node[1]] = true;
             this->Navigate(curr_node, this->stack_.top());
         }
@@ -474,7 +480,7 @@ bool maze_solver::Algorithm::DFSAlgorithm(std::array<int, 2> start)
     this->robot.rotationSensors();
     this->arr_matrix.at(curr_node.at(0)).at(curr_node.at(1)) = this->cellType();
 
-    while (count < 257)
+    while (count < 5)
     {
         if (FindNeighbours(curr_node))
         {
