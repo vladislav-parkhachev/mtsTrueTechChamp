@@ -11,5 +11,8 @@ add_executable(task_3 task_3.cpp)
 
 target_link_libraries(task_1 PRIVATE cpr::cpr)
 target_link_libraries(task_1 PRIVATE nlohmann_json::nlohmann_json)
+
 target_link_libraries(task_2 PRIVATE cpr::cpr)
+target_link_libraries(task_2 PRIVATE nlohmann_json::nlohmann_json)
+
 target_link_libraries(task_3 PRIVATE cpr::cpr)
