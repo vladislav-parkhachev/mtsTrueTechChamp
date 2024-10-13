@@ -105,6 +105,10 @@ namespace maze_solver
         void set_x(int x);
         void set_y(int y);
         void set_direction(char direction);
+
+        int get_x() const;
+        int get_y() const;
+        char get_direction() const;
     };
 
     struct Node
@@ -126,10 +130,10 @@ namespace maze_solver
         std::stack<std::array<int, 2>> stack_;
         maze_solver::RobotAPI robot;
         std::stack<std::array<int, 2>> path_stack_;
-        Matrix<Node, 16, 16> node_info;
-        Matrix<Node, 16, 16> node_master_;
-        Matrix<bool, 16, 16> explored_node_;
-        Matrix<bool, 16, 16> visited_node_;
+        std::array<std::array<Node, 16>, 16> node_info;
+        std::array<std::array<Node, 16>, 16> node_master_;
+        std::array<std::array<bool, 16>, 16> explored_node_;
+        std::array<std::array<bool, 16>, 16> visited_node_;
         std::array<int, 2> goal1_, goal2_, goal3_, goal4_, end_goal_;
 
         Algorithm() : path_found_{false}, current_direction_{'N'},
@@ -143,11 +147,12 @@ namespace maze_solver
         bool IsExplored(std::array<int, 2> cur_node);
         bool IsVisited(std::array<int, 2> cur_node);
         bool AddNeighbour(std::array<int, 2> cur_node, std::array<int, 2> neighbour);
-        void FindNeighbours(std::array<int, 2> cur_node);
+        bool FindNeighbours(std::array<int, 2> cur_node);
         bool DFSAlgorithm(std::array<int, 2> start);
-        std::stack<std::array<int, 2>> BackTrack(std::array<int, 2> current_node, Matrix<Node, 16, 16> &node);
+        std::stack<std::array<int, 2>> BackTrack(std::array<int, 2> current_node, std::array<std::array<Node, 16>, 16> &node);
         void Solve();
-        void Navigate(std::stack<std::array<int, 2>> &path);
+        // void Navigate(std::stack<std::array<int, 2>> &path);
+        void Navigate(std::array<int, 2> cur_node, std::array<int, 2> next_node);
         void ClearStack();
         void SetDefaults();
     };
@@ -156,10 +161,13 @@ namespace maze_solver
 
 int main()
 {
-    maze_solver::RobotAPI robot(api_interface::token);
-    // robot.MoveForward();
-    robot.TurnRight();
+    maze_solver::Algorithm algo_test_navigate;
+    std::array<int, 2> start{15, 0};
+    algo_test_navigate.DFSAlgorithm(start);
+    // algo_test_navigate.Navigate();
 
+    // algorithm.DFSAlgorithm(start);
+    // algorithm.BackTrack(algorithm.end_goal_, algorithm.node_master_);
 
     // Matrix<int, 16, 16> arr_matrix{};
     // Matrix<bool, 16, 16> visited_matrix{};
@@ -673,6 +681,21 @@ void maze_solver::RobotAPI::set_direction(char direction)
     this->direction = direction;
 }
 
+int maze_solver::RobotAPI::get_x() const
+{
+    return this->x;
+}
+
+int maze_solver::RobotAPI::get_y() const
+{
+    return this->y;
+}
+
+char maze_solver::RobotAPI::get_direction() const
+{
+    return this->direction;
+}
+
 void maze_solver::Algorithm::ClearStack()
 {
     while (!this->stack_.empty())
@@ -691,21 +714,22 @@ bool maze_solver::Algorithm::IsVisited(std::array<int, 2> cur_node)
 
 bool maze_solver::Algorithm::AddNeighbour(std::array<int, 2> cur_node, std::array<int, 2> neighbour)
 {
-    if (!IsExplored(neighbour))
-    {
+    if (!IsVisited(neighbour))
+    { 
         this->stack_.push(neighbour);
-        this->node_info[neighbour[0]][neighbour[1]].parent_node_ = cur_node;
-        if (neighbour == this->goal1_ || neighbour == this->goal2_ ||
-            neighbour == this->goal3_ || neighbour == this->goal4_)
-        {
-            this->temp_goal_ = true;
-            return true;
-        }
+        // this->node_info[neighbour[0]][neighbour[1]].parent_node_ = cur_node;
+        // if (neighbour == this->goal1_ || neighbour == this->goal2_ ||
+        //     neighbour == this->goal3_ || neighbour == this->goal4_)
+        // {
+        //     this->temp_goal_ = true;
+        //
+        // }
+        return true;
     }
     return false;
 }
 
-void maze_solver::Algorithm::FindNeighbours(std::array<int, 2> cur_node)
+bool maze_solver::Algorithm::FindNeighbours(std::array<int, 2> cur_node)
 {
     char robotDirection{robot.GetDirection()};
 
@@ -719,79 +743,74 @@ void maze_solver::Algorithm::FindNeighbours(std::array<int, 2> cur_node)
     if (robotDirection == 'N')
     {
         if (!this->temp_goal_ && node_W[1] >= 0 && robot.sensors_data.left_side_distance > 70)
-            AddNeighbour(cur_node, node_W);
+            return AddNeighbour(cur_node, node_W);
         if (!this->temp_goal_ && node_N[0] >= 0 && robot.sensors_data.front_distance > 70)
-            AddNeighbour(cur_node, node_N);
+            return AddNeighbour(cur_node, node_N);
         if (!this->temp_goal_ && node_E[1] <= 15 && robot.sensors_data.right_side_distance > 70)
-            AddNeighbour(cur_node, node_E);
+            return AddNeighbour(cur_node, node_E);
         if (!this->temp_goal_ && node_S[0] <= 15 && robot.sensors_data.back_distance > 70)
-            AddNeighbour(cur_node, node_S);
+            return AddNeighbour(cur_node, node_S);
     }
     else if (robotDirection == 'S')
     {
         if (!this->temp_goal_ && node_E[1] <= 15 && robot.sensors_data.left_side_distance > 70)
-            AddNeighbour(cur_node, node_E);
+            return AddNeighbour(cur_node, node_E);
         if (!this->temp_goal_ && node_S[0] <= 15 && robot.sensors_data.front_distance > 70)
-            AddNeighbour(cur_node, node_S);
+            return AddNeighbour(cur_node, node_S);
         if (!this->temp_goal_ && node_W[1] >= 0 && robot.sensors_data.right_side_distance > 70)
-            AddNeighbour(cur_node, node_W);
+            return AddNeighbour(cur_node, node_W);
         if (!this->temp_goal_ && node_N[0] >= 0 && robot.sensors_data.back_distance > 70)
-            AddNeighbour(cur_node, node_N);
+            return AddNeighbour(cur_node, node_N);
     }
     else if (robotDirection == 'E')
     {
         if (!this->temp_goal_ && node_N[0] >= 0 && robot.sensors_data.left_side_distance > 70)
-            AddNeighbour(cur_node, node_N);
+            return AddNeighbour(cur_node, node_N);
         if (!this->temp_goal_ && node_E[1] <= 15 && robot.sensors_data.front_distance > 70)
-            AddNeighbour(cur_node, node_E);
+            return AddNeighbour(cur_node, node_E);
         if (!this->temp_goal_ && node_S[0] <= 15 && robot.sensors_data.right_side_distance > 70)
-            AddNeighbour(cur_node, node_S);
+            return AddNeighbour(cur_node, node_S);
         if (!this->temp_goal_ && node_W[1] >= 0 && robot.sensors_data.back_distance > 70)
-            AddNeighbour(cur_node, node_W);
+            return AddNeighbour(cur_node, node_W);
     }
     else if (!this->temp_goal_ && robotDirection == 'W')
     {
-        if (!this->temp_goal_ && node_S[0] <= 15 && robot.sensors_data.right_side_distance > 70)
-            AddNeighbour(cur_node, node_S);
+        if (!this->temp_goal_ && node_S[0] <= 15 && robot.sensors_data.left_side_distance > 70)
+            return AddNeighbour(cur_node, node_S);
         if (!this->temp_goal_ && node_W[1] >= 0 && robot.sensors_data.front_distance > 70)
-            AddNeighbour(cur_node, node_W);
+            return AddNeighbour(cur_node, node_W);
         if (!this->temp_goal_ && node_N[0] >= 0 && robot.sensors_data.right_side_distance > 70)
-            AddNeighbour(cur_node, node_N);
+            return AddNeighbour(cur_node, node_N);
         if (!this->temp_goal_ && node_E[1] <= 15 && robot.sensors_data.back_distance > 70)
-            AddNeighbour(cur_node, node_E);
+            return AddNeighbour(cur_node, node_E);
     }
 }
 
 bool maze_solver::Algorithm::DFSAlgorithm(std::array<int, 2> start)
 {
     std::array<int, 2> curr_node{};
+    curr_node = start;
     this->temp_goal_ = false;
-    //---> Reset Stack and exploration History <---//
-    this->ClearStack();
     this->explored_node_ = {};
-    /* ---> Step 01: Add start to node <--- */
     this->stack_.push(start);
-    /* ---> Step 02: Initialize and assign parent node to start node <--- */
     this->node_info = std::array<std::array<Node, 16>, 16>();
     this->node_info[start[0]][start[1]].parent_node_ = start;
-    /* ---> Step 03: loop until stack_ exhausts <--- */
-    while (!this->stack_.empty())
+    int count = 1;
+    while (count < 257)
     {
-        /* ---> Step 04: Set Current Node <--- */
-        curr_node = stack_.top(); //--> Set the top last-in node as current node
-        this->stack_.pop();       //--> Pop/remove the last element from the stack
-        /* ---> Step 05: check IsGoal <--- */
-        if (curr_node == this->goal1_ || curr_node == this->goal2_ ||
-            curr_node == this->goal3_ || curr_node == this->goal4_)
+        if (FindNeighbours(curr_node))
         {
-            this->end_goal_ = curr_node;
-            return true;
+            count++;
+            this->visited_node_[curr_node[0]][curr_node[1]] = true;
+            this->Navigate(curr_node, this->stack_.top());
         }
-        /* ---> Step 06: Check Visited <--- */
-        else if (!IsExplored(curr_node))
-            FindNeighbours(curr_node);
-        /* ---> Step 07: Mark visited <--- */
-        this->explored_node_[curr_node[0]][curr_node[1]] = true;
+        else
+        {
+            this->stack_.pop();
+            this->Navigate(curr_node, this->stack_.top());
+        }
+        
+        curr_node = stack_.top();
     }
     return false;
 }
@@ -809,7 +828,7 @@ std::stack<std::array<int, 2>> maze_solver::Algorithm::BackTrack(std::array<int,
     return this->path_stack_;
 }
 
-void maze_solver::Algorithm::Navigate(std::stack<std::array<int, 2>> &local_path)
+void maze_solver::Algorithm::Navigate(std::array<int, 2> cur_node, std::array<int, 2> next_node)
 {
     int x{}, y{};
     char curr_direction{};
@@ -817,9 +836,12 @@ void maze_solver::Algorithm::Navigate(std::stack<std::array<int, 2>> &local_path
     std::array<int, 2> node_curr{}, node_next{};
 
     //---> Step 01: Extract the current Node and Next Node <---//
-    node_curr = local_path.top();
-    local_path.pop();
-    node_next = local_path.top();
+    // node_curr = local_path.top();
+    // local_path.pop();
+    // node_next = local_path.top();
+
+    node_next = next_node;
+    node_curr = cur_node;
 
     //---> Step 02: Compute the togo direction <---//
     x = node_next[0] - node_curr[0];
@@ -981,4 +1003,62 @@ void maze_solver::Algorithm::Navigate(std::stack<std::array<int, 2>> &local_path
                 this->path_blocked = true;
         }
     }
+}
+
+void maze_solver::Algorithm::Solve()
+{
+    bool path{};
+    char curr_direction{};
+    std::array<int, 2> curr_node{};
+    std::stack<std::array<int, 2>> local_path{};
+    curr_direction = this->robot.GetDirection();
+    this->robot.set_x(15);
+    this->robot.set_y(0);
+    curr_node = {this->robot.get_x(), this->robot.get_y()};
+    this->node_info[curr_node[0]][curr_node[1]].parent_node_ = curr_node;
+    this->node_master_[curr_node[0]][curr_node[1]].parent_node_ = this->parent_node_;
+
+    //---> Step 01: Clear all tile color <---//
+    temp_goal_ = false;
+    while (true)
+    {
+        //---> Step 02: Mark Current Node Visited <---//
+        this->visited_node_[curr_node[0]][curr_node[1]] = true;
+        //---> Step 03: Read walls around the robot <---//
+
+        if (this->path_blocked)
+        {
+            //---> Step 04: Generate Path using DFS Algorithm <---//
+            path = this->DFSAlgorithm(curr_node);
+            temp_goal_ = false;
+            //---> Step 05: BackTrack the current path <---//
+            // if (path)
+            // {
+            //     local_path = this->BackTrack(this->end_goal_, this->node_info);
+            //     this->path_blocked = false;
+            // }
+            // else
+            //     break;
+        }
+        //---> Step 06: Navigate to next node <---//
+        // this->Navigate(local_path);
+        //---> Step 07: Update the parent node <---//
+        this->parent_node_ = curr_node;
+        //---> Step 08: Update current node<---//
+        curr_direction = this->robot.GetDirection();
+        curr_node = {this->robot.get_x(), this->robot.get_y()};
+        //---> Step 09: Update the parent node <---//
+        if (!IsVisited(curr_node))
+            this->node_master_[curr_node[0]][curr_node[1]].parent_node_ = this->parent_node_;
+        //---> Step 10: Check for goal <---//
+        // if (curr_node == this->goal1_ || curr_node == this->goal2_ ||
+        //     curr_node == this->goal3_ || curr_node == this->goal4_)
+        // {
+        //     temp_goal_ = false;
+        //     this->end_goal_ = curr_node;
+        //     return;
+        // }
+    }
+    std::cerr << "\nNo path found!\n"
+              << std::endl;
 }
