@@ -16,3 +16,4 @@ target_link_libraries(task_2 PRIVATE cpr::cpr)
 target_link_libraries(task_2 PRIVATE nlohmann_json::nlohmann_json)
 
 target_link_libraries(task_3 PRIVATE cpr::cpr)
+target_link_libraries(task_3 PRIVATE nlohmann_json::nlohmann_json)

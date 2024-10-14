@@ -135,7 +135,7 @@ int main()
     
     std::array<int, 2> current_node;
 
-    while (!algo_test_navigate.move_history.empty())
+    while (algo_test_navigate.move_history.size() > 1)
     {
         current_node = algo_test_navigate.move_history.top();
         algo_test_navigate.move_history.pop();

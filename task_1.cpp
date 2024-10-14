@@ -82,19 +82,17 @@ namespace maze_solver
     class Algorithm
     {
     public:
-        bool path_found_;
-        bool temp_goal_{false}, path_blocked{true};
+        
+        
         char current_direction_;
         std::array<int, 2> current_node_;
-        std::array<int, 2> parent_node_;
         std::stack<std::array<int, 2>> stack_;
         std::array<std::array<int, 16>, 16> arr_matrix;
         maze_solver::RobotAPI robot;
         std::array<std::array<bool, 16>, 16> visited_node_;
-        std::array<int, 2> goal1_, goal2_, goal3_, goal4_, end_goal_;
 
-        Algorithm() : path_found_{false}, current_direction_{'N'},
-                      current_node_{}, parent_node_{}, stack_{},
+        Algorithm() : current_direction_{'N'},
+                      current_node_{}, stack_{},
                       visited_node_{}, robot{api_interface::token}, arr_matrix{}
         {
         }
@@ -355,46 +353,46 @@ bool maze_solver::Algorithm::FindNeighbours(std::array<int, 2> cur_node)
 
     if (robotDirection == 'N')
     {
-        if (!this->temp_goal_ && node_W[1] >= 0 && robot.sensors_data.left_side_distance > 70)
+        if (node_W[1] >= 0 && robot.sensors_data.left_side_distance > 70)
             return AddNeighbour(cur_node, node_W);
-        if (!this->temp_goal_ && node_N[0] >= 0 && robot.sensors_data.front_distance > 70)
+        if (node_N[0] >= 0 && robot.sensors_data.front_distance > 70)
             return AddNeighbour(cur_node, node_N);
-        if (!this->temp_goal_ && node_E[1] <= 15 && robot.sensors_data.right_side_distance > 70)
+        if (node_E[1] <= 15 && robot.sensors_data.right_side_distance > 70)
             return AddNeighbour(cur_node, node_E);
-        if (!this->temp_goal_ && node_S[0] <= 15 && robot.sensors_data.back_distance > 70)
+        if (node_S[0] <= 15 && robot.sensors_data.back_distance > 70)
             return AddNeighbour(cur_node, node_S);
     }
     else if (robotDirection == 'S')
     {
-        if (!this->temp_goal_ && node_E[1] <= 15 && robot.sensors_data.left_side_distance > 70)
+        if (node_E[1] <= 15 && robot.sensors_data.left_side_distance > 70)
             return AddNeighbour(cur_node, node_E);
-        if (!this->temp_goal_ && node_S[0] <= 15 && robot.sensors_data.front_distance > 70)
+        if (node_S[0] <= 15 && robot.sensors_data.front_distance > 70)
             return AddNeighbour(cur_node, node_S);
-        if (!this->temp_goal_ && node_W[1] >= 0 && robot.sensors_data.right_side_distance > 70)
+        if (node_W[1] >= 0 && robot.sensors_data.right_side_distance > 70)
             return AddNeighbour(cur_node, node_W);
-        if (!this->temp_goal_ && node_N[0] >= 0 && robot.sensors_data.back_distance > 70)
+        if (node_N[0] >= 0 && robot.sensors_data.back_distance > 70)
             return AddNeighbour(cur_node, node_N);
     }
     else if (robotDirection == 'E')
     {
-        if (!this->temp_goal_ && node_N[0] >= 0 && robot.sensors_data.left_side_distance > 70)
+        if (node_N[0] >= 0 && robot.sensors_data.left_side_distance > 70)
             return AddNeighbour(cur_node, node_N);
-        if (!this->temp_goal_ && node_E[1] <= 15 && robot.sensors_data.front_distance > 70)
+        if (node_E[1] <= 15 && robot.sensors_data.front_distance > 70)
             return AddNeighbour(cur_node, node_E);
-        if (!this->temp_goal_ && node_S[0] <= 15 && robot.sensors_data.right_side_distance > 70)
+        if (node_S[0] <= 15 && robot.sensors_data.right_side_distance > 70)
             return AddNeighbour(cur_node, node_S);
-        if (!this->temp_goal_ && node_W[1] >= 0 && robot.sensors_data.back_distance > 70)
+        if (node_W[1] >= 0 && robot.sensors_data.back_distance > 70)
             return AddNeighbour(cur_node, node_W);
     }
-    else if (!this->temp_goal_ && robotDirection == 'W')
+    else if (robotDirection == 'W')
     {
-        if (!this->temp_goal_ && node_S[0] <= 15 && robot.sensors_data.left_side_distance > 70)
+        if (node_S[0] <= 15 && robot.sensors_data.left_side_distance > 70)
             return AddNeighbour(cur_node, node_S);
-        if (!this->temp_goal_ && node_W[1] >= 0 && robot.sensors_data.front_distance > 70)
+        if (node_W[1] >= 0 && robot.sensors_data.front_distance > 70)
             return AddNeighbour(cur_node, node_W);
-        if (!this->temp_goal_ && node_N[0] >= 0 && robot.sensors_data.right_side_distance > 70)
+        if (node_N[0] >= 0 && robot.sensors_data.right_side_distance > 70)
             return AddNeighbour(cur_node, node_N);
-        if (!this->temp_goal_ && node_E[1] <= 15 && robot.sensors_data.back_distance > 70)
+        if (node_E[1] <= 15 && robot.sensors_data.back_distance > 70)
             return AddNeighbour(cur_node, node_E);
     }
 
@@ -405,7 +403,6 @@ bool maze_solver::Algorithm::DFSAlgorithm(std::array<int, 2> start)
 {
     std::array<int, 2> curr_node{};
     curr_node = start;
-    this->temp_goal_ = false;
     this->stack_.push(start);
     int count = 1;
     this->robot.UpdateSensorsData();
@@ -466,8 +463,6 @@ void maze_solver::Algorithm::Navigate(std::array<int, 2> cur_node, std::array<in
         {
             if (this->robot.sensors_data.front_distance > 70)
                 this->robot.MoveForward(node_next[0], node_next[1], direction_togo);
-            else
-                this->path_blocked = true;
         }
         else if (direction_togo == 'S')
         {
@@ -482,8 +477,6 @@ void maze_solver::Algorithm::Navigate(std::array<int, 2> cur_node, std::array<in
                 this->robot.TurnRight();
                 this->robot.MoveForward(node_next[0], node_next[1], direction_togo);
             }
-            else
-                this->path_blocked = true;
         }
         else if (direction_togo == 'W')
         {
@@ -492,8 +485,6 @@ void maze_solver::Algorithm::Navigate(std::array<int, 2> cur_node, std::array<in
                 this->robot.TurnLeft();
                 this->robot.MoveForward(node_next[0], node_next[1], direction_togo);
             }
-            else
-                this->path_blocked = true;
         }
     }
     else if (curr_direction == 'S')
@@ -508,8 +499,6 @@ void maze_solver::Algorithm::Navigate(std::array<int, 2> cur_node, std::array<in
         {
             if (this->robot.sensors_data.front_distance > 70)
                 this->robot.MoveForward(node_next[0], node_next[1], direction_togo);
-            else
-                this->path_blocked = true;
         }
         else if (direction_togo == 'E')
         {
@@ -518,8 +507,6 @@ void maze_solver::Algorithm::Navigate(std::array<int, 2> cur_node, std::array<in
                 this->robot.TurnLeft();
                 this->robot.MoveForward(node_next[0], node_next[1], direction_togo);
             }
-            else
-                this->path_blocked = true;
         }
         else if (direction_togo == 'W')
         {
@@ -528,8 +515,6 @@ void maze_solver::Algorithm::Navigate(std::array<int, 2> cur_node, std::array<in
                 this->robot.TurnRight();
                 this->robot.MoveForward(node_next[0], node_next[1], direction_togo);
             }
-            else
-                this->path_blocked = true;
         }
     }
     else if (curr_direction == 'E')
@@ -541,8 +526,6 @@ void maze_solver::Algorithm::Navigate(std::array<int, 2> cur_node, std::array<in
                 this->robot.TurnLeft();
                 this->robot.MoveForward(node_next[0], node_next[1], direction_togo);
             }
-            else
-                this->path_blocked = true;
         }
         else if (direction_togo == 'S')
         {
@@ -551,15 +534,11 @@ void maze_solver::Algorithm::Navigate(std::array<int, 2> cur_node, std::array<in
                 this->robot.TurnRight();
                 this->robot.MoveForward(node_next[0], node_next[1], direction_togo);
             }
-            else
-                this->path_blocked = true;
         }
         else if (direction_togo == 'E')
         {
             if (this->robot.sensors_data.front_distance > 70)
                 this->robot.MoveForward(node_next[0], node_next[1], direction_togo);
-            else
-                this->path_blocked = true;
         }
         else if (direction_togo == 'W')
         {
@@ -577,8 +556,6 @@ void maze_solver::Algorithm::Navigate(std::array<int, 2> cur_node, std::array<in
                 this->robot.TurnRight();
                 this->robot.MoveForward(node_next[0], node_next[1], direction_togo);
             }
-            else
-                this->path_blocked = true;
         }
         else if (direction_togo == 'S')
         {
@@ -587,8 +564,6 @@ void maze_solver::Algorithm::Navigate(std::array<int, 2> cur_node, std::array<in
                 this->robot.TurnLeft();
                 this->robot.MoveForward(node_next[0], node_next[1], direction_togo);
             }
-            else
-                this->path_blocked = true;
         }
         else if (direction_togo == 'E')
         {
@@ -600,8 +575,6 @@ void maze_solver::Algorithm::Navigate(std::array<int, 2> cur_node, std::array<in
         {
             if (this->robot.sensors_data.front_distance > 70)
                 this->robot.MoveForward(node_next[0], node_next[1], direction_togo);
-            else
-                this->path_blocked = true;
         }
     }
 }
